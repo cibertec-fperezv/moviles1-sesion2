@@ -6,20 +6,13 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public final class RetrofitClient {
 
-    private static Retrofit RETROFIT = null;
-
-    public static Retrofit getInstance() {
-        if (RETROFIT == null) {
-            OkHttpClient client = new OkHttpClient.Builder().build();
-
-            RETROFIT = new Retrofit.Builder()
-                    .baseUrl("https://jsonplaceholder.typicode.com")
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .client(client)
-                    .build();
-        }
-
-        return RETROFIT;
+    public static Retrofit getInstance(String baseUrl) {
+        OkHttpClient client = new OkHttpClient.Builder().build();
+        return new Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(client)
+                .build();
     }
 
 }

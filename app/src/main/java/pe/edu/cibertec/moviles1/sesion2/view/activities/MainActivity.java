@@ -15,25 +15,34 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 import pe.edu.cibertec.moviles1.sesion2.R;
+import pe.edu.cibertec.moviles1.sesion2.data.retrofit.ClientConstants;
+import pe.edu.cibertec.moviles1.sesion2.data.retrofit.CountriesApi;
 import pe.edu.cibertec.moviles1.sesion2.data.retrofit.RetrofitClient;
 import pe.edu.cibertec.moviles1.sesion2.data.retrofit.UsersApi;
+import pe.edu.cibertec.moviles1.sesion2.models.Country;
 import pe.edu.cibertec.moviles1.sesion2.models.User;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MainActivity extends AppCompatActivity implements Callback<List<User>>,
+public class MainActivity extends AppCompatActivity implements
         View.OnClickListener, AdapterView.OnItemSelectedListener, CompoundButton.OnCheckedChangeListener {
 
     Spinner spUsers;
-    ArrayAdapter<String> adapter;
+    ArrayAdapter<String> usersAdapter;
     private List<User> users = new ArrayList<>();
     private List<String> userNames = new ArrayList<>();
+
+    Spinner spCountries;
+    ArrayAdapter<String> countriesAdapter;
+    private List<Country> countries = new ArrayList<>();
+    private List<String> countryNames = new ArrayList<>();
 
     Button btnShow;
 
@@ -55,8 +64,12 @@ public class MainActivity extends AppCompatActivity implements Callback<List<Use
         setContentView(R.layout.activity_main);
 
         spUsers = findViewById(R.id.spUsers);
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, userNames);
-        spUsers.setAdapter(adapter);
+        usersAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, userNames);
+        spUsers.setAdapter(usersAdapter);
+
+        spCountries = findViewById(R.id.spCountries);
+        countriesAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, countryNames);
+        spCountries.setAdapter(countriesAdapter);
 
         btnShow = findViewById(R.id.btnShow);
         btnShow.setOnClickListener(this);
@@ -73,26 +86,48 @@ public class MainActivity extends AppCompatActivity implements Callback<List<Use
         lblWebsite = findViewById(R.id.lblWebsite);
         lblCompany = findViewById(R.id.lblCompany);
 
-        UsersApi usersClient = RetrofitClient.getInstance().create(UsersApi.class);
-        usersClient.getUsers().enqueue(this);
-    }
+        CountriesApi countriesClient = RetrofitClient.getInstance(ClientConstants.COUNTRIES).create(CountriesApi.class);
+        countriesClient.getCountries().enqueue(new Callback<List<Country>>() {
+            @Override
+            public void onResponse(Call<List<Country>> call, Response<List<Country>> response) {
+                Log.d("countries", "successful: " + response.isSuccessful() + ", body: " + response.body());
 
-    @Override
-    public void onResponse(Call<List<User>> call, Response<List<User>> response) {
-        Log.d("users", "successful: " + response.isSuccessful() + ", body: " + response.body());
+                if (response.isSuccessful()) {
+                    countries.addAll(response.body());
+                    countryNames.addAll(countries.stream().map(c -> c.getName().getOfficial()).collect(Collectors.toList()));
+                    countriesAdapter.notifyDataSetChanged();
+                } else {
+                    Toast.makeText(getBaseContext(), response.message(), Toast.LENGTH_SHORT).show();
+                }
+            }
 
-        if (response.isSuccessful()) {
-            users.addAll(response.body());
-            userNames.addAll(users.stream().map(User::getName).collect(Collectors.toList()));
-            adapter.notifyDataSetChanged();
-        } else {
-            Toast.makeText(this, response.message(), Toast.LENGTH_SHORT).show();
-        }
-    }
+            @Override
+            public void onFailure(Call<List<Country>> call, Throwable t) {
+                Toast.makeText(getBaseContext(), t.getMessage(), Toast.LENGTH_SHORT).show();
 
-    @Override
-    public void onFailure(Call<List<User>> call, Throwable t) {
-        Toast.makeText(this, t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        UsersApi usersClient = RetrofitClient.getInstance(ClientConstants.USERS).create(UsersApi.class);
+        usersClient.getUsers().enqueue(new Callback<List<User>>() {
+            @Override
+            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
+                Log.d("users", "successful: " + response.isSuccessful() + ", body: " + response.body());
+
+                if (response.isSuccessful()) {
+                    users.addAll(response.body());
+                    userNames.addAll(users.stream().map(User::getName).collect(Collectors.toList()));
+                    usersAdapter.notifyDataSetChanged();
+                } else {
+                    Toast.makeText(getBaseContext(), response.message(), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<User>> call, Throwable t) {
+                Toast.makeText(getBaseContext(), t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override
